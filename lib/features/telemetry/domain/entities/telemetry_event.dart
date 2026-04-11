@@ -8,6 +8,8 @@ enum TelemetryEventType {
   shuffleUsed,
   undoUsed,
   boosterPurchase,
+  hintUsed,
+  timeBoostUsed,
   missionClaim,
   pause,
   resume,

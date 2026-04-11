@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,6 +7,7 @@ import '../../../../core/constants/game_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../application/game_hub_controller.dart';
 import '../../domain/entities/game_status.dart';
+import '../../domain/entities/shelf_hint_move.dart';
 import '../widgets/action_buttons.dart';
 import '../widgets/board_grid.dart';
 import '../widgets/decorative_background.dart';
@@ -21,14 +24,24 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
+  Timer? _countdownTicker;
+  Timer? _hintTicker;
+  ShelfHintMove? _activeHint;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _countdownTicker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _onCountdownTick(),
+    );
   }
 
   @override
   void dispose() {
+    _countdownTicker?.cancel();
+    _hintTicker?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -75,6 +88,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                             moves: session.moves,
                             coins: profile.coins,
                             combo: session.comboStreak,
+                            remainingSeconds:
+                                widget.hub.gameController.currentRemainingSeconds,
                             isPlaying: session.status == GameStatus.playing,
                             onPauseToggle: _onPauseToggle,
                             onRestart: _onRestart,
@@ -118,6 +133,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                 shelfCapacity: config.shelfCapacity,
                                 isInputEnabled:
                                     session.status == GameStatus.playing,
+                                hintMove: _activeHint,
                                 onMoveItem: _onMoveItem,
                               ),
                             ),
@@ -133,16 +149,24 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                             canUndo: widget.hub.gameController.canUndo,
                             canShuffle: widget.hub.gameController.canShuffle,
                             shuffleCharges: session.shuffleCharges,
+                            canUseHint: widget.hub.canUseHint,
+                            hintCost: widget.hub.hintCost,
+                            canBuyExtraTime: widget.hub.canBuyExtraTime,
+                            extraTimeCost: widget.hub.extraTimeCost,
+                            extraTimeSeconds: widget.hub.extraTimeSeconds,
                             canBuyExtraShuffle: widget.hub.canBuyExtraShuffle,
                             extraShuffleCost: widget.hub.extraShuffleCost,
                             onUndo: _onUndo,
                             onShuffle: _onShuffle,
+                            onUseHint: _onUseHint,
+                            onBuyExtraTime: _onBuyExtraTime,
                             onBuyExtraShuffle: _onBuyExtraShuffle,
                           ),
                         ],
                       ),
                       StatusOverlay(
                         status: session.status,
+                        lossReason: session.lossReason,
                         score: session.score,
                         level: session.level,
                         starsEarned: session.starsEarned,
@@ -171,6 +195,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onMoveItem(int fromShelf, int fromSlot, int toShelf) {
     _lightHaptic();
+    _clearHint();
     widget.hub.moveShelfItem(
       fromShelf: fromShelf,
       fromSlot: fromSlot,
@@ -180,12 +205,50 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onUndo() {
     _lightHaptic();
+    _clearHint();
     widget.hub.undo();
   }
 
   void _onShuffle() {
     _lightHaptic();
+    _clearHint();
     widget.hub.shuffleRemaining();
+  }
+
+  void _onUseHint() {
+    _lightHaptic();
+    final move = widget.hub.useHint();
+    if (move == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hint unavailable. Check coins or remaining moves.'),
+        ),
+      );
+      return;
+    }
+
+    _showHint(move);
+  }
+
+  void _onBuyExtraTime() {
+    _lightHaptic();
+    final success = widget.hub.buyExtraTime();
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? '+${widget.hub.extraTimeSeconds}s added to the timer.'
+              : 'Not enough coins to buy extra time.',
+        ),
+      ),
+    );
   }
 
   void _onBuyExtraShuffle() {
@@ -208,6 +271,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onPauseToggle() {
     _lightHaptic();
+    _clearHint();
     final status = widget.hub.gameController.session.status;
     if (status == GameStatus.playing) {
       widget.hub.pause();
@@ -218,17 +282,52 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onResume() {
     _lightHaptic();
+    _clearHint();
     widget.hub.resume();
   }
 
   void _onRestart() {
     _lightHaptic();
+    _clearHint();
     widget.hub.restart();
   }
 
   void _onNextLevel() {
     _lightHaptic();
+    _clearHint();
     widget.hub.nextLevel();
+  }
+
+  void _onCountdownTick() {
+    if (!mounted) {
+      return;
+    }
+
+    if (widget.hub.gameController.session.status != GameStatus.playing) {
+      return;
+    }
+
+    widget.hub.gameController.heartbeat();
+    setState(() {});
+  }
+
+  void _showHint(ShelfHintMove move) {
+    _hintTicker?.cancel();
+    setState(() {
+      _activeHint = move;
+    });
+    _hintTicker = Timer(const Duration(seconds: 3), _clearHint);
+  }
+
+  void _clearHint() {
+    _hintTicker?.cancel();
+    _hintTicker = null;
+    if (_activeHint == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _activeHint = null;
+    });
   }
 
   void _lightHaptic() {

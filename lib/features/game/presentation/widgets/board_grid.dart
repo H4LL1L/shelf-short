@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/item_kind.dart';
+import '../../domain/entities/shelf_hint_move.dart';
 import '../model/item_visuals.dart';
 import 'shelf_product.dart';
 
@@ -14,6 +15,7 @@ class BoardGrid extends StatelessWidget {
     required this.closedShelves,
     required this.shelfCapacity,
     required this.isInputEnabled,
+    this.hintMove,
     required this.onMoveItem,
   });
 
@@ -21,6 +23,7 @@ class BoardGrid extends StatelessWidget {
   final List<bool> closedShelves;
   final int shelfCapacity;
   final bool isInputEnabled;
+  final ShelfHintMove? hintMove;
   final ShelfMoveCallback onMoveItem;
 
   @override
@@ -62,6 +65,8 @@ class BoardGrid extends StatelessWidget {
               isClosed: isClosed,
               shelfCapacity: shelfCapacity,
               isInputEnabled: isInputEnabled,
+              isHintSource: hintMove?.fromShelf == shelfIndex,
+              isHintTarget: hintMove?.toShelf == shelfIndex,
               onMoveItem: onMoveItem,
             );
           },
@@ -79,6 +84,8 @@ class _ShelfCell extends StatelessWidget {
     required this.isClosed,
     required this.shelfCapacity,
     required this.isInputEnabled,
+    required this.isHintSource,
+    required this.isHintTarget,
     required this.onMoveItem,
   });
 
@@ -87,6 +94,8 @@ class _ShelfCell extends StatelessWidget {
   final bool isClosed;
   final int shelfCapacity;
   final bool isInputEnabled;
+  final bool isHintSource;
+  final bool isHintTarget;
   final ShelfMoveCallback onMoveItem;
 
   @override
@@ -104,6 +113,16 @@ class _ShelfCell extends StatelessWidget {
       },
       builder: (context, candidateData, _) {
         final isCandidate = candidateData.isNotEmpty;
+        final hintBorderColor = isHintTarget
+            ? const Color(0xFFB8FF7B)
+            : isHintSource
+            ? const Color(0xFF8DE0FF)
+            : const Color(0xFF895423);
+        final hintShadowColor = isHintTarget
+            ? const Color(0x663A9B22)
+            : isHintSource
+            ? const Color(0x6645A7C9)
+            : const Color(0x22000000);
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 160),
@@ -118,9 +137,16 @@ class _ShelfCell extends StatelessWidget {
             border: Border.all(
               color: isCandidate
                   ? const Color(0xFFFFE7A6)
-                  : const Color(0xFF895423),
-              width: isCandidate ? 1.2 : 0.8,
+                  : hintBorderColor,
+              width: isCandidate || isHintSource || isHintTarget ? 1.3 : 0.8,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: hintShadowColor,
+                blurRadius: isHintSource || isHintTarget ? 8 : 0,
+                spreadRadius: isHintSource || isHintTarget ? 0.3 : 0,
+              ),
+            ],
           ),
           child: Stack(
             children: [
@@ -217,6 +243,33 @@ class _ShelfCell extends StatelessWidget {
               ),
               if (isClosed)
                 const Positioned.fill(child: _ClosedCupboardOverlay()),
+              if (!isClosed && (isHintSource || isHintTarget))
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: isHintTarget
+                          ? const Color(0xFF3E8F2A)
+                          : const Color(0xFF2A79A7),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        isHintTarget ? 'DROP' : 'MOVE',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );

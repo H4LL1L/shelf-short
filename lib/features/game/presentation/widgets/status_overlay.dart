@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/entities/game_loss_reason.dart';
 import '../../domain/entities/game_status.dart';
 
 class StatusOverlay extends StatelessWidget {
   const StatusOverlay({
     super.key,
     required this.status,
+    required this.lossReason,
     required this.score,
     required this.level,
     required this.starsEarned,
@@ -21,6 +23,7 @@ class StatusOverlay extends StatelessWidget {
   });
 
   final GameStatus status;
+  final GameLossReason? lossReason;
   final int score;
   final int level;
   final int starsEarned;
@@ -39,7 +42,12 @@ class StatusOverlay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final data = _OverlayData.from(status, score, level);
+    final data = _OverlayData.from(
+      status: status,
+      lossReason: lossReason,
+      score: score,
+      level: level,
+    );
 
     return Positioned.fill(
       child: ColoredBox(
@@ -231,7 +239,12 @@ class _OverlayData {
   final String message;
   final Color titleColor;
 
-  factory _OverlayData.from(GameStatus status, int score, int level) {
+  factory _OverlayData.from({
+    required GameStatus status,
+    required GameLossReason? lossReason,
+    required int score,
+    required int level,
+  }) {
     switch (status) {
       case GameStatus.paused:
         return const _OverlayData(
@@ -246,6 +259,14 @@ class _OverlayData {
           titleColor: AppColors.success,
         );
       case GameStatus.lost:
+        if (lossReason == GameLossReason.timeExpired) {
+          return const _OverlayData(
+            title: 'Time Up',
+            message:
+                'The timer ran out before the shelves were cleared. Restart and route faster.',
+            titleColor: AppColors.danger,
+          );
+        }
         return const _OverlayData(
           title: 'No Moves Left',
           message: 'No valid shelf transfer remains. Try a different ordering.',

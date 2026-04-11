@@ -1,3 +1,4 @@
+import 'game_loss_reason.dart';
 import 'game_status.dart';
 import 'item_kind.dart';
 import 'tile_model.dart';
@@ -19,6 +20,9 @@ class GameSession {
     required this.status,
     required List<TileModel> boardTiles,
     required List<ItemKind> tray,
+    this.levelTimeLimitSeconds = 0,
+    this.elapsedPlaySeconds = 0,
+    this.lossReason,
     List<List<ItemKind>> shelves = const <List<ItemKind>>[],
     List<bool> closedShelves = const <bool>[],
   })  : boardTiles = List.unmodifiable(boardTiles),
@@ -65,6 +69,9 @@ class GameSession {
   final int starsEarned;
   final int shuffleCharges;
   final GameStatus status;
+  final int levelTimeLimitSeconds;
+  final int elapsedPlaySeconds;
+  final GameLossReason? lossReason;
   final List<TileModel> boardTiles;
   final List<ItemKind> tray;
   final List<List<ItemKind>> shelves;
@@ -93,6 +100,9 @@ class GameSession {
     int? starsEarned,
     int? shuffleCharges,
     GameStatus? status,
+    int? levelTimeLimitSeconds,
+    int? elapsedPlaySeconds,
+    Object? lossReason = _copyLossReasonSentinel,
     List<TileModel>? boardTiles,
     List<ItemKind>? tray,
     List<List<ItemKind>>? shelves,
@@ -112,6 +122,11 @@ class GameSession {
       starsEarned: starsEarned ?? this.starsEarned,
       shuffleCharges: shuffleCharges ?? this.shuffleCharges,
       status: status ?? this.status,
+      levelTimeLimitSeconds: levelTimeLimitSeconds ?? this.levelTimeLimitSeconds,
+      elapsedPlaySeconds: elapsedPlaySeconds ?? this.elapsedPlaySeconds,
+      lossReason: identical(lossReason, _copyLossReasonSentinel)
+          ? this.lossReason
+          : lossReason as GameLossReason?,
       boardTiles: boardTiles ?? this.boardTiles,
       tray: tray ?? this.tray,
       shelves: shelves ?? this.shelves,
@@ -134,6 +149,9 @@ class GameSession {
       'starsEarned': starsEarned,
       'shuffleCharges': shuffleCharges,
       'status': status.name,
+      'levelTimeLimitSeconds': levelTimeLimitSeconds,
+      'elapsedPlaySeconds': elapsedPlaySeconds,
+      'lossReason': lossReason?.name,
       'boardTiles': boardTiles.map((tile) => tile.toJson()).toList(),
       'tray': tray.map((kind) => kind.name).toList(),
       'shelves': shelves
@@ -163,6 +181,9 @@ class GameSession {
       starsEarned: _asInt(json['starsEarned']),
       shuffleCharges: _asInt(json['shuffleCharges']),
       status: GameStatusX.parse(json['status'] as String?),
+      levelTimeLimitSeconds: _asInt(json['levelTimeLimitSeconds']),
+      elapsedPlaySeconds: _asInt(json['elapsedPlaySeconds']),
+      lossReason: GameLossReasonX.parse(json['lossReason'] as String?),
       boardTiles: boardRaw
           .map((item) => TileModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -194,3 +215,5 @@ class GameSession {
     );
   }
 }
+
+const Object _copyLossReasonSentinel = Object();

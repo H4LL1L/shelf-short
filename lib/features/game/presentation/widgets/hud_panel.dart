@@ -10,6 +10,7 @@ class HudPanel extends StatelessWidget {
     required this.moves,
     required this.coins,
     required this.combo,
+    required this.remainingSeconds,
     required this.isPlaying,
     required this.onPauseToggle,
     required this.onRestart,
@@ -20,6 +21,7 @@ class HudPanel extends StatelessWidget {
   final int moves;
   final int coins;
   final int combo;
+  final int remainingSeconds;
   final bool isPlaying;
   final VoidCallback onPauseToggle;
   final VoidCallback onRestart;
@@ -51,6 +53,13 @@ class HudPanel extends StatelessWidget {
                 _StatChip(label: 'LEVEL', value: '$level'),
                 _StatChip(label: 'SCORE', value: '$score'),
                 _StatChip(label: 'MOVES', value: '$moves'),
+                _StatChip(
+                  label: 'TIME',
+                  value: _formatTime(remainingSeconds),
+                  highlightColor: remainingSeconds <= 30
+                      ? AppColors.danger
+                      : AppColors.textMain,
+                ),
                 _StatChip(label: 'COINS', value: '$coins'),
                 _StatChip(label: 'COMBO', value: '$combo'),
               ],
@@ -90,10 +99,15 @@ class HudPanel extends StatelessWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value});
+  const _StatChip({
+    required this.label,
+    required this.value,
+    this.highlightColor,
+  });
 
   final String label;
   final String value;
+  final Color? highlightColor;
 
   @override
   Widget build(BuildContext context) {
@@ -112,11 +126,19 @@ class _StatChip extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textMain,
+                color: highlightColor ?? AppColors.textMain,
                 fontWeight: FontWeight.w800,
               ),
         ),
       ],
     );
   }
+}
+
+String _formatTime(int remainingSeconds) {
+  final total = remainingSeconds < 0 ? 0 : remainingSeconds;
+  final minutes = total ~/ 60;
+  final seconds = total % 60;
+  final paddedSeconds = seconds.toString().padLeft(2, '0');
+  return '$minutes:$paddedSeconds';
 }

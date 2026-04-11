@@ -28,6 +28,8 @@ void main() {
           starsEarned: 1,
           shuffleCharges: 1,
           status: GameStatus.paused,
+          levelTimeLimitSeconds: 180,
+          elapsedPlaySeconds: 64,
           boardTiles: const [
             TileModel(id: 'a', kind: ItemKind.milk),
             TileModel(id: 'b', kind: ItemKind.milk),
@@ -48,6 +50,7 @@ void main() {
       expect(hub.hasRestorableRun, isTrue);
       expect(hub.gameController.session.level, 3);
       expect(hub.gameController.session.status, GameStatus.paused);
+      expect(hub.gameController.currentRemainingSeconds, 116);
 
       final resumed = hub.resumeActiveRun();
       expect(resumed, isTrue);

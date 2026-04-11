@@ -10,6 +10,7 @@ import '../../telemetry/domain/entities/telemetry_event.dart';
 import '../data/run_session_repository.dart';
 import '../domain/entities/game_session.dart';
 import '../domain/entities/game_status.dart';
+import '../domain/entities/shelf_hint_move.dart';
 import 'game_controller.dart';
 
 class GameHubController extends ChangeNotifier {
@@ -20,6 +21,9 @@ class GameHubController extends ChangeNotifier {
     GameAudioService? audioService,
     TelemetryService? telemetryService,
     this.extraShuffleCost = 140,
+    this.hintCost = 90,
+    this.extraTimeCost = 120,
+    this.extraTimeSeconds = 15,
   }) : _runSessionRepository =
            runSessionRepository ?? const NoopRunSessionRepository(),
        _audioService = audioService ?? const NoopGameAudioService(),
@@ -34,6 +38,9 @@ class GameHubController extends ChangeNotifier {
   final GameAudioService _audioService;
   final TelemetryService _telemetryService;
   final int extraShuffleCost;
+  final int hintCost;
+  final int extraTimeCost;
+  final int extraTimeSeconds;
 
   GameSession _lastSession = GameSession.initial();
   bool _hasRestorableRun = false;
@@ -48,6 +55,17 @@ class GameHubController extends ChangeNotifier {
   bool get canBuyExtraShuffle =>
       gameController.session.status == GameStatus.playing &&
       progressController.profile.coins >= extraShuffleCost;
+
+  bool get canUseHint =>
+      gameController.session.status == GameStatus.playing &&
+      gameController.currentRemainingSeconds > 0 &&
+      progressController.profile.coins >= hintCost &&
+      gameController.findHintMove() != null;
+
+  bool get canBuyExtraTime =>
+      gameController.session.status == GameStatus.playing &&
+      gameController.currentRemainingSeconds > 0 &&
+      progressController.profile.coins >= extraTimeCost;
 
   Future<void> initialize() async {
     await _audioService.initialize();
@@ -74,7 +92,11 @@ class GameHubController extends ChangeNotifier {
     unawaited(
       _telemetryService.track(
         TelemetryEventType.levelStart,
-        properties: <String, Object?>{'level': level, 'seeded': seed != null},
+        properties: <String, Object?>{
+          'level': level,
+          'seeded': seed != null,
+          'timeLimitSeconds': gameController.session.levelTimeLimitSeconds,
+        },
       ),
     );
   }
@@ -90,6 +112,7 @@ class GameHubController extends ChangeNotifier {
           'level': gameController.session.level,
           'seeded': false,
           'source': 'nextLevel',
+          'timeLimitSeconds': gameController.session.levelTimeLimitSeconds,
         },
       ),
     );
@@ -106,6 +129,7 @@ class GameHubController extends ChangeNotifier {
           'level': gameController.session.level,
           'seeded': true,
           'source': 'restart',
+          'timeLimitSeconds': gameController.session.levelTimeLimitSeconds,
         },
       ),
     );
@@ -113,14 +137,34 @@ class GameHubController extends ChangeNotifier {
 
   void pause() {
     gameController.pause();
+    if (gameController.session.status != GameStatus.paused) {
+      return;
+    }
     unawaited(_audioService.play(SoundCue.pause));
-    unawaited(_telemetryService.track(TelemetryEventType.pause));
+    unawaited(
+      _telemetryService.track(
+        TelemetryEventType.pause,
+        properties: <String, Object?>{
+          'remainingSeconds': gameController.currentRemainingSeconds,
+        },
+      ),
+    );
   }
 
   void resume() {
     gameController.resume();
+    if (gameController.session.status != GameStatus.playing) {
+      return;
+    }
     unawaited(_audioService.play(SoundCue.resume));
-    unawaited(_telemetryService.track(TelemetryEventType.resume));
+    unawaited(
+      _telemetryService.track(
+        TelemetryEventType.resume,
+        properties: <String, Object?>{
+          'remainingSeconds': gameController.currentRemainingSeconds,
+        },
+      ),
+    );
   }
 
   void goIdle() {
@@ -172,10 +216,21 @@ class GameHubController extends ChangeNotifier {
 
     if (gameController.session.status == GameStatus.paused) {
       gameController.resume();
-      unawaited(_audioService.play(SoundCue.resume));
+      if (gameController.session.status == GameStatus.playing) {
+        unawaited(_audioService.play(SoundCue.resume));
+      }
     }
 
-    unawaited(_telemetryService.track(TelemetryEventType.runRestored));
+    if (gameController.session.status == GameStatus.playing) {
+      unawaited(
+        _telemetryService.track(
+          TelemetryEventType.runRestored,
+          properties: <String, Object?>{
+            'remainingSeconds': gameController.currentRemainingSeconds,
+          },
+        ),
+      );
+    }
 
     return gameController.session.status == GameStatus.playing;
   }
@@ -255,40 +310,113 @@ class GameHubController extends ChangeNotifier {
 
   bool buyExtraShuffle() {
     if (!canBuyExtraShuffle) {
-      unawaited(
-        _telemetryService.track(
-          TelemetryEventType.boosterPurchase,
-          properties: <String, Object?>{
-            'success': false,
-            'cost': extraShuffleCost,
-          },
-        ),
+      _trackBoosterPurchase(
+        booster: 'shuffle',
+        success: false,
+        cost: extraShuffleCost,
       );
       return false;
     }
 
     final spent = progressController.spendCoins(extraShuffleCost);
     if (!spent) {
-      unawaited(
-        _telemetryService.track(
-          TelemetryEventType.boosterPurchase,
-          properties: <String, Object?>{
-            'success': false,
-            'cost': extraShuffleCost,
-          },
-        ),
+      _trackBoosterPurchase(
+        booster: 'shuffle',
+        success: false,
+        cost: extraShuffleCost,
       );
       return false;
     }
 
     gameController.grantShuffleCharge(1);
     unawaited(_audioService.play(SoundCue.boosterPurchase));
+    _trackBoosterPurchase(
+      booster: 'shuffle',
+      success: true,
+      cost: extraShuffleCost,
+    );
+    return true;
+  }
+
+  ShelfHintMove? useHint() {
+    final move = gameController.findHintMove();
+    if (!canUseHint || move == null) {
+      _trackBoosterPurchase(
+        booster: 'hint',
+        success: false,
+        cost: hintCost,
+      );
+      return null;
+    }
+
+    final spent = progressController.spendCoins(hintCost);
+    if (!spent) {
+      _trackBoosterPurchase(
+        booster: 'hint',
+        success: false,
+        cost: hintCost,
+      );
+      return null;
+    }
+
+    unawaited(_audioService.play(SoundCue.boosterPurchase));
+    _trackBoosterPurchase(
+      booster: 'hint',
+      success: true,
+      cost: hintCost,
+    );
     unawaited(
       _telemetryService.track(
-        TelemetryEventType.boosterPurchase,
+        TelemetryEventType.hintUsed,
         properties: <String, Object?>{
-          'success': true,
-          'cost': extraShuffleCost,
+          'level': gameController.session.level,
+          'fromShelf': move.fromShelf,
+          'fromSlot': move.fromSlot,
+          'toShelf': move.toShelf,
+        },
+      ),
+    );
+    return move;
+  }
+
+  bool buyExtraTime() {
+    if (!canBuyExtraTime) {
+      _trackBoosterPurchase(
+        booster: 'time',
+        success: false,
+        cost: extraTimeCost,
+      );
+      return false;
+    }
+
+    final spent = progressController.spendCoins(extraTimeCost);
+    if (!spent) {
+      _trackBoosterPurchase(
+        booster: 'time',
+        success: false,
+        cost: extraTimeCost,
+      );
+      return false;
+    }
+
+    final applied = gameController.addTimeSeconds(extraTimeSeconds);
+    if (!applied) {
+      return false;
+    }
+
+    unawaited(_audioService.play(SoundCue.boosterPurchase));
+    _trackBoosterPurchase(
+      booster: 'time',
+      success: true,
+      cost: extraTimeCost,
+    );
+    unawaited(
+      _telemetryService.track(
+        TelemetryEventType.timeBoostUsed,
+        properties: <String, Object?>{
+          'level': gameController.session.level,
+          'secondsAdded': extraTimeSeconds,
+          'remainingSeconds': gameController.currentRemainingSeconds,
         },
       ),
     );
@@ -408,6 +536,8 @@ class GameHubController extends ChangeNotifier {
             'stars': current.starsEarned,
             'triples': current.triplesClearedInRun,
             'bestCombo': current.bestComboInRun,
+            'elapsedSeconds': current.elapsedPlaySeconds,
+            'lossReason': current.lossReason?.name,
           },
         ),
       );
@@ -456,6 +586,7 @@ class GameHubController extends ChangeNotifier {
         properties: <String, Object?>{
           'level': loaded.level,
           'moves': loaded.moves,
+          'remainingSeconds': gameController.currentRemainingSeconds,
         },
       ),
     );
@@ -463,6 +594,24 @@ class GameHubController extends ChangeNotifier {
 
   void _persistRun(GameSession session) {
     unawaited(_runSessionRepository.save(session));
+  }
+
+  void _trackBoosterPurchase({
+    required String booster,
+    required bool success,
+    required int cost,
+  }) {
+    unawaited(
+      _telemetryService.track(
+        TelemetryEventType.boosterPurchase,
+        properties: <String, Object?>{
+          'booster': booster,
+          'success': success,
+          'cost': cost,
+          'level': gameController.session.level,
+        },
+      ),
+    );
   }
 
   @override

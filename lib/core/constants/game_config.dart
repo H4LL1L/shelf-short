@@ -17,6 +17,10 @@ class GameConfig {
     this.baseScorePerTriple = 60,
     this.comboBonusPerTriple = 20,
     this.comboStreakBonusPerStep = 15,
+    this.baseLevelTimeSeconds = 80,
+    this.secondsPerTriple = 3,
+    this.secondsPerLevelStep = 3,
+    this.maxLevelTimeSeconds = 240,
   });
 
   final int trayCapacity;
@@ -34,6 +38,10 @@ class GameConfig {
   final int baseScorePerTriple;
   final int comboBonusPerTriple;
   final int comboStreakBonusPerStep;
+  final int baseLevelTimeSeconds;
+  final int secondsPerTriple;
+  final int secondsPerLevelStep;
+  final int maxLevelTimeSeconds;
 
   int tileCountForLevel(int level) {
     final scaled = baseTiles + ((level - 1) * tilesPerLevel);
@@ -51,5 +59,17 @@ class GameConfig {
   int shelfCountForTiles(int tileCount) {
     final requiredShelves = (tileCount / shelfCapacity).ceil();
     return max(minShelves, requiredShelves + extraEmptyShelves);
+  }
+
+  int levelTimeLimitFor({
+    required int level,
+    required int tileCount,
+  }) {
+    final triples = max(1, tileCount ~/ 3);
+    final scaled =
+        baseLevelTimeSeconds +
+        (triples * secondsPerTriple) +
+        ((max(1, level) - 1) * secondsPerLevelStep);
+    return min(maxLevelTimeSeconds, scaled);
   }
 }

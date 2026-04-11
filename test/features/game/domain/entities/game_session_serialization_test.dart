@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shelf_short/features/game/domain/entities/game_loss_reason.dart';
 import 'package:shelf_short/features/game/domain/entities/game_session.dart';
 import 'package:shelf_short/features/game/domain/entities/game_status.dart';
 import 'package:shelf_short/features/game/domain/entities/item_kind.dart';
@@ -20,6 +21,9 @@ void main() {
       starsEarned: 2,
       shuffleCharges: 2,
       status: GameStatus.playing,
+      levelTimeLimitSeconds: 180,
+      elapsedPlaySeconds: 47,
+      lossReason: GameLossReason.noMoves,
       boardTiles: const [
         TileModel(id: 't1', kind: ItemKind.apple),
         TileModel(id: 't2', kind: ItemKind.bread, isCollected: true),
@@ -43,6 +47,9 @@ void main() {
     expect(restored.starsEarned, session.starsEarned);
     expect(restored.shuffleCharges, session.shuffleCharges);
     expect(restored.status, session.status);
+    expect(restored.levelTimeLimitSeconds, session.levelTimeLimitSeconds);
+    expect(restored.elapsedPlaySeconds, session.elapsedPlaySeconds);
+    expect(restored.lossReason, session.lossReason);
     expect(restored.boardTiles, hasLength(2));
     expect(restored.boardTiles[1].isCollected, isTrue);
     expect(restored.tray, session.tray);

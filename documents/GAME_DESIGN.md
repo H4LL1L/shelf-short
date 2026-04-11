@@ -17,7 +17,7 @@
 
 ## 3. Rules and Win/Lose Conditions
 - Any visible product on an open shelf can be dragged.
-- Shelf match: 3 or 4 of the same item in one shelf eye closes that eye.
+- Shelf match: 3 of the same item in one shelf eye closes that eye.
 - Win: no uncollected tiles remain.
 - Lose: no legal shelf transfer remains.
 

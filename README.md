@@ -52,6 +52,8 @@ flutter build appbundle --release
 
 - `documents/PROJECT_RULES.md`
 - `documents/ARCHITECTURE.md`
+- `documents/COMPETITIVE_AUDIT.md`
+- `documents/EXECUTION_TODO.md`
 - `documents/GAME_DESIGN.md`
 - `documents/UI_UX_GUIDELINES.md`
 - `documents/MARKET_BENCHMARK_NOTES.md`
