@@ -40,88 +40,105 @@ class ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: canUndo ? onUndo : null,
-                icon: const Icon(Icons.undo_rounded),
-                label: const Text('Undo'),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.accent, width: 1.4),
-                  foregroundColor: AppColors.accent,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: canShuffle ? onShuffle : null,
-                icon: const Icon(Icons.shuffle_rounded),
-                label: Text('Shuffle ($shuffleCharges)'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
-                  disabledBackgroundColor:
-                      AppColors.secondary.withValues(alpha: 0.4),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: canUseHint ? onUseHint : null,
-                icon: const Icon(Icons.lightbulb_rounded),
-                label: Text('Hint ($hintCost)'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.35),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: canBuyExtraTime ? onBuyExtraTime : null,
-                icon: const Icon(Icons.timer_rounded),
-                label: Text('+${extraTimeSeconds}s ($extraTimeCost)'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning,
-                  disabledBackgroundColor:
-                      AppColors.warning.withValues(alpha: 0.35),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: canBuyExtraShuffle ? onBuyExtraShuffle : null,
-            icon: const Icon(Icons.bolt_rounded),
-            label: Text('Buy +1 Shuffle ($extraShuffleCost)'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _MiniActionButton(
+            label: 'Undo',
+            icon: Icons.undo_rounded,
+            color: AppColors.accent,
+            onPressed: canUndo ? onUndo : null,
+            isOutlined: true,
           ),
-        ),
+          const SizedBox(width: 6),
+          _MiniActionButton(
+            label: 'Shuffle $shuffleCharges',
+            icon: Icons.shuffle_rounded,
+            color: AppColors.secondary,
+            onPressed: canShuffle ? onShuffle : null,
+          ),
+          const SizedBox(width: 6),
+          _MiniActionButton(
+            label: 'Hint $hintCost',
+            icon: Icons.lightbulb_rounded,
+            color: AppColors.accent,
+            onPressed: canUseHint ? onUseHint : null,
+          ),
+          const SizedBox(width: 6),
+          _MiniActionButton(
+            label: '+${extraTimeSeconds}s',
+            icon: Icons.timer_rounded,
+            color: AppColors.warning,
+            onPressed: canBuyExtraTime ? onBuyExtraTime : null,
+          ),
+          const SizedBox(width: 6),
+          _MiniActionButton(
+            label: '+1 Shuffle',
+            icon: Icons.bolt_rounded,
+            color: AppColors.primary,
+            onPressed: canBuyExtraShuffle ? onBuyExtraShuffle : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniActionButton extends StatelessWidget {
+  const _MiniActionButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+    this.isOutlined = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+  final bool isOutlined;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 6),
+        Text(label),
       ],
+    );
+
+    if (isOutlined) {
+      return OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: color, width: 1.3),
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          visualDensity: VisualDensity.compact,
+          minimumSize: const Size(0, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: child,
+      );
+    }
+
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        disabledBackgroundColor: color.withValues(alpha: 0.35),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        visualDensity: VisualDensity.compact,
+        minimumSize: const Size(0, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: child,
     );
   }
 }

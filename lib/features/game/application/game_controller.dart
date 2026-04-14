@@ -151,7 +151,11 @@ class GameController extends ChangeNotifier {
       baseScorePerTriple: _config.baseScorePerTriple,
     );
 
-    final shelves = _buildShelves(boardTiles, generatedSeed);
+    final shelves = _buildShelves(
+      boardTiles,
+      generatedSeed,
+      safeLevel,
+    );
     final closedShelves = List<bool>.filled(shelves.length, false);
 
     _history.clear();
@@ -563,12 +567,19 @@ class GameController extends ChangeNotifier {
     return false;
   }
 
-  List<List<ItemKind>> _buildShelves(List<TileModel> boardTiles, int seed) {
+  List<List<ItemKind>> _buildShelves(
+    List<TileModel> boardTiles,
+    int seed,
+    int level,
+  ) {
     final rng = Random(seed + 17);
     final items = boardTiles.map((tile) => tile.kind).toList(growable: true)
       ..shuffle(rng);
 
-    final shelfCount = _config.shelfCountForTiles(items.length);
+    final shelfCount = _config.shelfCountForLevel(
+      level: level,
+      tileCount: items.length,
+    );
     final shelves = List<List<ItemKind>>.generate(
       shelfCount,
       (_) => <ItemKind>[],
@@ -646,7 +657,6 @@ class GameController extends ChangeNotifier {
       return false;
     }
 
-    final movingKind = source[fromSlot];
-    return target.isEmpty || target.last == movingKind;
+    return true;
   }
 }

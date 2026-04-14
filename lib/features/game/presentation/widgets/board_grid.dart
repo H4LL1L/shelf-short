@@ -34,22 +34,29 @@ class BoardGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 900
+        final itemCount = shelves.length;
+        final columns = constraints.maxWidth >= 980
             ? 7
-            : constraints.maxWidth >= 560
+            : constraints.maxWidth >= 720
             ? 6
-            : 6;
-        final aspectRatio = constraints.maxWidth >= 560 ? 1.08 : 1.16;
+            : 4;
+        final rows = (itemCount / columns).ceil().clamp(1, itemCount);
+        const spacing = 3.0;
+        final cellWidth =
+            (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
+        final cellHeight =
+            (constraints.maxHeight - ((rows - 1) * spacing)) / rows;
+        final aspectRatio = (cellWidth / cellHeight).clamp(0.55, 0.9);
 
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(3, 3, 3, 6),
-          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(2),
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: shelves.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             childAspectRatio: aspectRatio,
-            crossAxisSpacing: 2,
-            mainAxisSpacing: 2,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
           ),
           itemBuilder: (context, shelfIndex) {
             final items = shelves[shelfIndex];
@@ -106,7 +113,7 @@ class _ShelfCell extends StatelessWidget {
         if (!isInputEnabled || isClosed) return false;
         if (data.fromShelf == shelfIndex) return false;
         if (items.length >= shelfCapacity) return false;
-        return items.isEmpty || items.last == data.kind;
+        return true;
       },
       onAcceptWithDetails: (details) {
         onMoveItem(details.data.fromShelf, details.data.fromSlot, shelfIndex);
@@ -128,7 +135,7 @@ class _ShelfCell extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(8),
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -152,9 +159,9 @@ class _ShelfCell extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: Container(
-                  margin: const EdgeInsets.fromLTRB(2, 2, 2, 3),
+                  margin: const EdgeInsets.fromLTRB(3, 3, 3, 4),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(6),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -168,11 +175,11 @@ class _ShelfCell extends StatelessWidget {
                 ),
               ),
               Positioned(
-                left: 2,
-                right: 2,
-                bottom: 2,
+                left: 4,
+                right: 4,
+                bottom: 3,
                 child: Container(
-                  height: 4,
+                  height: 5,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(99),
                     gradient: const LinearGradient(
@@ -184,7 +191,7 @@ class _ShelfCell extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(1, 1, 1, 3),
+                padding: const EdgeInsets.fromLTRB(3, 3, 3, 6),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: List<Widget>.generate(shelfCapacity, (slotIndex) {
@@ -200,7 +207,7 @@ class _ShelfCell extends StatelessWidget {
 
                     return Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 0.6),
                         child: isDraggable
                             ? LongPressDraggable<_DraggedItem>(
                                 key: slotKey,
@@ -215,7 +222,7 @@ class _ShelfCell extends StatelessWidget {
                                   color: Colors.transparent,
                                   child: ShelfProduct(
                                     kind: item,
-                                    maxHeight: 74,
+                                    maxHeight: 86,
                                     isLifted: true,
                                   ),
                                 ),
@@ -316,7 +323,7 @@ class _ShelfSlotBody extends StatelessWidget {
                 right: -1,
                 child: Icon(
                   Icons.unfold_more_rounded,
-                  size: 7,
+                  size: 8,
                   color: Color(0xFFFFE07B),
                 ),
               ),

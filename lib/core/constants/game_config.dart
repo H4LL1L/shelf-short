@@ -4,14 +4,16 @@ class GameConfig {
   const GameConfig({
     this.trayCapacity = 7,
     this.shelfCapacity = 4,
-    this.minShelves = 40,
-    this.extraEmptyShelves = 16,
+    this.minShelves = 16,
+    this.maxShelves = 24,
+    this.levelsPerShelfStep = 2,
+    this.extraEmptyShelves = 0,
     this.matchGroupMin = 3,
     this.matchGroupMax = 4,
-    this.baseTiles = 84,
-    this.tilesPerLevel = 6,
-    this.maxTiles = 132,
-    this.baseVariety = 10,
+    this.baseTiles = 42,
+    this.tilesPerLevel = 3,
+    this.maxTiles = 72,
+    this.baseVariety = 6,
     this.maxVariety = 12,
     this.baseShuffleCharges = 1,
     this.baseScorePerTriple = 60,
@@ -26,6 +28,8 @@ class GameConfig {
   final int trayCapacity;
   final int shelfCapacity;
   final int minShelves;
+  final int maxShelves;
+  final int levelsPerShelfStep;
   final int extraEmptyShelves;
   final int matchGroupMin;
   final int matchGroupMax;
@@ -56,9 +60,18 @@ class GameConfig {
     return min(max(3, cappedByConfig), availableKinds);
   }
 
-  int shelfCountForTiles(int tileCount) {
+  int shelfCountForLevel({
+    required int level,
+    required int tileCount,
+  }) {
+    final safeLevel = max(1, level);
+    final steppedShelves =
+        minShelves + ((safeLevel - 1) ~/ max(1, levelsPerShelfStep));
+    final desiredShelves = min(maxShelves, steppedShelves);
     final requiredShelves = (tileCount / shelfCapacity).ceil();
-    return max(minShelves, requiredShelves + extraEmptyShelves);
+    final minimumPlayableShelves = requiredShelves + 2;
+
+    return min(maxShelves, max(desiredShelves, minimumPlayableShelves));
   }
 
   int levelTimeLimitFor({

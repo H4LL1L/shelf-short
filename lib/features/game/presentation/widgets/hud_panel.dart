@@ -28,53 +28,52 @@ class HudPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.panel.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.panelStrong),
       ),
       child: Row(
         children: [
           Expanded(
             child: Wrap(
-              spacing: 16,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children: [
-                _StatChip(label: 'LEVEL', value: '$level'),
-                _StatChip(label: 'SCORE', value: '$score'),
-                _StatChip(label: 'MOVES', value: '$moves'),
+                _StatChip(label: 'L', value: '$level'),
                 _StatChip(
-                  label: 'TIME',
+                  label: 'T',
                   value: _formatTime(remainingSeconds),
                   highlightColor: remainingSeconds <= 30
                       ? AppColors.danger
                       : AppColors.textMain,
                 ),
-                _StatChip(label: 'COINS', value: '$coins'),
-                _StatChip(label: 'COMBO', value: '$combo'),
+                _StatChip(label: 'S', value: '$score'),
+                _StatChip(label: 'M', value: '$moves'),
+                _StatChip(label: 'C', value: '$coins'),
+                _StatChip(label: 'X', value: '$combo'),
               ],
             ),
           ),
+          const SizedBox(width: 6),
           IconButton.filledTonal(
             onPressed: onPauseToggle,
-            icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+            icon: Icon(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            ),
             tooltip: isPlaying ? 'Pause' : 'Resume',
             style: IconButton.styleFrom(
               backgroundColor: AppColors.panelStrong,
               foregroundColor: AppColors.primary,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.all(8),
+              minimumSize: const Size(36, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           IconButton.filledTonal(
             onPressed: onRestart,
             icon: const Icon(Icons.refresh_rounded),
@@ -82,14 +81,10 @@ class HudPanel extends StatelessWidget {
             style: IconButton.styleFrom(
               backgroundColor: AppColors.panelStrong,
               foregroundColor: AppColors.secondary,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'Shelf Rush',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.textMain,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.all(8),
+              minimumSize: const Size(36, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         ],
@@ -111,26 +106,35 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.textMuted,
-                letterSpacing: 1.1,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: highlightColor ?? AppColors.textMain,
-                fontWeight: FontWeight.w800,
-              ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppColors.textMuted,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w700,
+              fontSize: 9,
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: highlightColor ?? AppColors.textMain,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

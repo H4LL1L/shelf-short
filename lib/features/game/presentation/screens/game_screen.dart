@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/game_config.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../application/game_hub_controller.dart';
 import '../../domain/entities/game_status.dart';
 import '../../domain/entities/shelf_hint_move.dart';
@@ -77,7 +76,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             body: DecorativeBackground(
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
                   child: Stack(
                     children: [
                       Column(
@@ -94,15 +93,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                             onPauseToggle: _onPauseToggle,
                             onRestart: _onRestart,
                           ),
-                          const SizedBox(height: 10),
-                          _ObjectiveStrip(
-                            score: session.score,
-                            targetScore: session.objectiveTargetScore,
-                            bestCombo: session.bestComboInRun,
-                            targetCombo: session.objectiveTargetCombo,
-                            stars: session.starsEarned,
-                          ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 6),
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
@@ -138,13 +129,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          _MetaStrip(
-                            playerLevel: profile.playerLevel,
-                            xp: profile.xp,
-                            streak: profile.dailyStreak,
-                          ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 6),
                           ActionButtons(
                             canUndo: widget.hub.gameController.canUndo,
                             canShuffle: widget.hub.gameController.canShuffle,
@@ -338,138 +323,3 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 }
 
-class _MetaStrip extends StatelessWidget {
-  const _MetaStrip({
-    required this.playerLevel,
-    required this.xp,
-    required this.streak,
-  });
-
-  final int playerLevel;
-  final int xp;
-  final int streak;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.panel.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.panelStrong),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text('Player Lv $playerLevel'),
-          const SizedBox(width: 12),
-          const Icon(
-            Icons.flash_on_rounded,
-            size: 18,
-            color: AppColors.secondary,
-          ),
-          const SizedBox(width: 6),
-          Text('XP $xp'),
-          const Spacer(),
-          const Icon(
-            Icons.local_fire_department,
-            size: 18,
-            color: AppColors.warning,
-          ),
-          const SizedBox(width: 4),
-          Text('Streak $streak'),
-        ],
-      ),
-    );
-  }
-}
-
-class _ObjectiveStrip extends StatelessWidget {
-  const _ObjectiveStrip({
-    required this.score,
-    required this.targetScore,
-    required this.bestCombo,
-    required this.targetCombo,
-    required this.stars,
-  });
-
-  final int score;
-  final int targetScore;
-  final int bestCombo;
-  final int targetCombo;
-  final int stars;
-
-  @override
-  Widget build(BuildContext context) {
-    final scoreRatio = targetScore <= 0
-        ? 0.0
-        : (score / targetScore).clamp(0.0, 1.0);
-    final comboRatio = targetCombo <= 0
-        ? 0.0
-        : (bestCombo / targetCombo).clamp(0.0, 1.0);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.panel.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.panelStrong),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.flag_rounded,
-                color: AppColors.secondary,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text('Score $score/$targetScore'),
-              const Spacer(),
-              const Icon(
-                Icons.bolt_rounded,
-                color: AppColors.warning,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text('Combo $bestCombo/$targetCombo'),
-              const SizedBox(width: 8),
-              for (var i = 0; i < 3; i++)
-                Icon(
-                  i < stars ? Icons.star_rounded : Icons.star_border_rounded,
-                  color: i < stars ? AppColors.warning : AppColors.textMuted,
-                  size: 18,
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: scoreRatio,
-                  minHeight: 7,
-                  borderRadius: BorderRadius.circular(10),
-                  backgroundColor: AppColors.panelStrong,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: comboRatio,
-                  minHeight: 7,
-                  borderRadius: BorderRadius.circular(10),
-                  backgroundColor: AppColors.panelStrong,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
